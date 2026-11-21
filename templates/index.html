@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0a0e16">
+  <title>ScamShield — Check before you trust</title>
+  <style>
+    :root {
+      --bg:#0a0e16; --panel:#101723; --panel-2:#0c121c; --line:#1d2735;
+      --text:#e7ecf4; --muted:#8a97ab; --faint:#5d6a7e;
+      --blue-2:#2f81d6; --violet:#6c5ce7; --cyan:#22d3ee;
+      --green:#10b981; --amber:#f59e0b; --red:#ef4444;
+      --neon:#39FF88; --electric:#00C8FF;
+      --ease:cubic-bezier(.22,1,.36,1);
+      --glass:linear-gradient(160deg,rgba(20,30,46,.72),rgba(10,16,26,.5));
+      --font:"Inter","Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+      --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+    }
+    * { box-sizing:border-box; }
+    html { background:var(--bg); scroll-behavior:smooth; }
+    body {
+      margin:0; color:var(--text); font:14px/1.55 var(--font); min-height:100vh;
+      background:radial-gradient(900px 400px at 85% -10%, #1a2a4a55, transparent 70%), var(--bg);
+    }
+    .shell { max-width:1180px; margin:0 auto; padding:20px 20px 40px; }
+    [hidden] { display:none !important; }
+    .grad { background:linear-gradient(90deg,var(--neon),var(--electric)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+
+    /* ---------- top bar ---------- */
+    .topbar {
+      position:sticky; top:10px; z-index:60;
+      display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;
+      background:rgba(16,23,35,.78); border:1px solid #1d3a4a; border-radius:14px;
+      padding:12px 18px; margin-bottom:16px;
+      -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px);
+      box-shadow:0 8px 30px rgba(0,0,0,.35);
+    }
+    .brand { display:flex; align-items:center; gap:10px; font-weight:700; font-size:16px; }
+    .logo { width:28px; height:28px; border-radius:8px; display:grid; place-items:center; background:linear-gradient(135deg,var(--neon),var(--electric)); }
+    .logo svg { width:16px; height:16px; stroke:#03110a; }
+    .nav-controls { display:flex; align-items:center; flex-wrap:wrap; gap:8px; }
+    .nav-controls select, .select { color:var(--text); background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:8px; font:inherit; }
+    .ss-links { display:flex; gap:2px; }
+    .chip { font-size:11px; font-weight:600; color:var(--muted); border:1px solid var(--line); background:var(--panel-2); padding:4px 10px; border-radius:99px; }
+    .chip.live { color:var(--neon); border-color:#14583a; }
+    .chip.off { color:var(--amber); border-color:#6a4a0a; }
+
+    /* ---------- buttons ---------- */
+    button, .btn {
+      cursor:pointer; border:0; border-radius:8px; padding:10px 16px;
+      font:inherit; font-weight:650; font-size:13px; text-decoration:none;
+      display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    }
+    button:focus-visible, .btn:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline:2px solid var(--cyan); outline-offset:2px; }
+    .primary { background:var(--neon); color:#03110a; flex:1; }
+    .primary:hover { background:#6dffa8; }
+    .secondary { background:var(--panel-2); color:var(--text); border:1px solid var(--line); }
+    .secondary:hover { border-color:var(--blue-2); }
+    .linkbtn { background:transparent; color:var(--muted); padding:6px 11px; font-size:12px; }
+    .linkbtn:hover { color:var(--neon); }
+    button:disabled { opacity:.6; cursor:wait; }
+    .ghost { background:rgba(0,200,255,.06); color:var(--electric); border:1px solid rgba(0,200,255,.45); }
+    .ghost:hover { background:rgba(0,200,255,.14); box-shadow:0 0 22px rgba(0,200,255,.25); }
+    .big { padding:13px 24px; font-size:14px; border-radius:10px; flex:none; }
+    .glow { animation:pulse 2.2s ease-out infinite; }
+
+    /* ---------- hero ---------- */
+    .hero {
+      position:relative; isolation:isolate; overflow:hidden; text-align:center;
+      min-height:calc(100vh - 96px); display:grid; place-items:center;
+      border:1px solid #16314a; border-radius:20px;
+      background:
+        radial-gradient(700px 420px at 50% 32%, rgba(0,200,255,.14), transparent 70%),
+        radial-gradient(600px 400px at 18% 92%, rgba(57,255,136,.09), transparent 70%),
+        linear-gradient(180deg,#070b13,#0a0e16);
+    }
+    .gridbg {
+      position:absolute; inset:-12% 0; z-index:-2; pointer-events:none;
+      background-image:linear-gradient(rgba(0,200,255,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(0,200,255,.07) 1px,transparent 1px);
+      background-size:56px 56px;
+      -webkit-mask-image:radial-gradient(ellipse at center,#000 25%,transparent 75%);
+      mask-image:radial-gradient(ellipse at center,#000 25%,transparent 75%);
+    }
+    canvas.net { position:absolute; inset:0; width:100%; height:100%; z-index:-1; pointer-events:none; }
+    .hero-inner { padding:40px 20px 80px; max-width:880px; will-change:transform,opacity; }
+    .shield { position:relative; width:clamp(130px,20vw,200px); aspect-ratio:1; margin:0 auto 22px; display:grid; place-items:center; }
+    .shield svg { width:60%; height:60%; overflow:visible; filter:drop-shadow(0 0 14px rgba(57,255,136,.55)); }
+    .shield .outline { fill:rgba(57,255,136,.07); stroke:var(--neon); stroke-width:1.1; stroke-dasharray:100; stroke-dashoffset:100; animation:draw 1.6s var(--ease) .2s forwards; }
+    .shield .check { fill:none; stroke:var(--electric); stroke-width:1.4; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:100; stroke-dashoffset:100; animation:draw .9s var(--ease) 1.4s forwards; }
+    .ring { position:absolute; inset:0; border-radius:50%; border:1px dashed rgba(0,200,255,.38); animation:spin 22s linear infinite; }
+    .ring.r2 { inset:13%; border-color:rgba(57,255,136,.32); animation-duration:14s; animation-direction:reverse; }
+    .sweep {
+      position:absolute; inset:-5%; border-radius:50%;
+      background:conic-gradient(from 0deg,transparent 0 280deg,rgba(57,255,136,.6) 360deg);
+      -webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2px));
+      mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2px));
+      animation:spin 3.2s linear infinite;
+    }
+    .scanline { position:absolute; left:22%; right:22%; height:2px; top:24%; background:linear-gradient(90deg,transparent,var(--neon),transparent); box-shadow:0 0 12px var(--neon); animation:scan 2.8s ease-in-out infinite alternate; }
+    .eyebrow { font:600 12px/1 var(--mono); letter-spacing:.18em; text-transform:uppercase; color:var(--neon); margin:0 0 14px; }
+    .hero h1 { font-size:clamp(38px,7.2vw,82px); line-height:1.02; font-weight:850; letter-spacing:-.03em; margin:0 0 16px; }
+    .line { display:block; overflow:hidden; padding-bottom:.1em; }
+    .line > span { display:inline-block; transform:translateY(110%); animation:rise 1s var(--ease) forwards; }
+    .line:nth-child(2) > span { animation-delay:.18s; }
+    .hero-sub { color:#b4c0d2; font-size:clamp(15px,2vw,19px); max-width:640px; margin:0 auto 26px; opacity:0; animation:fade 1s ease .7s forwards; }
+    .cta { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; opacity:0; animation:fade 1s ease .95s forwards; }
+    .fp { position:absolute; pointer-events:none; }
+    .float {
+      display:block; font:600 11px var(--mono); color:#a8e8c4; white-space:nowrap;
+      padding:6px 12px; border-radius:99px; border:1px solid rgba(57,255,136,.3);
+      background:rgba(8,20,16,.55); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);
+      animation:floaty 6s ease-in-out infinite;
+    }
+    .fp:nth-of-type(even) .float { color:#9fdcf0; border-color:rgba(0,200,255,.3); background:rgba(6,16,24,.55); animation-duration:7.5s; animation-delay:-2s; }
+    .scroll-hint { position:absolute; bottom:18px; left:50%; translate:-50% 0; color:var(--faint); font:600 10px var(--mono); letter-spacing:.2em; text-transform:uppercase; display:grid; justify-items:center; gap:8px; }
+    .scroll-hint i { width:18px; height:28px; border:1.5px solid var(--faint); border-radius:12px; position:relative; }
+    .scroll-hint i::after { content:""; position:absolute; left:50%; top:6px; width:3px; height:6px; margin-left:-1.5px; border-radius:2px; background:var(--neon); animation:wheel 1.8s ease-in-out infinite; }
+    @media (max-width:720px) { .fp:nth-of-type(n+4) { display:none; } }
+
+    /* ---------- marquee ---------- */
+    .marquee { overflow:hidden; margin-top:18px; border-block:1px solid var(--line);
+      -webkit-mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent); mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent); }
+    .marquee-track { display:flex; gap:12px; width:max-content; padding:12px 0; animation:marquee 46s linear infinite; }
+    .marquee:hover .marquee-track { animation-play-state:paused; }
+    .tag { font:600 12px var(--mono); padding:6px 14px; border-radius:99px; white-space:nowrap; color:#9fdcf0; border:1px solid rgba(0,200,255,.25); background:rgba(0,200,255,.05); }
+
+    /* ---------- landing sections ---------- */
+    .sec { position:relative; padding:clamp(56px,9vw,110px) 0 0; scroll-margin-top:84px; }
+    .sec-head { margin-bottom:22px; }
+    .h2 { font-size:clamp(28px,4.6vw,52px); line-height:1.06; font-weight:800; letter-spacing:-.02em; margin:0 0 14px; }
+    .lead { color:var(--muted); font-size:clamp(14px,1.5vw,17px); max-width:660px; margin:0; }
+
+    .js-fx .reveal { opacity:0; transform:translateY(30px) scale(.985); transition:opacity .8s var(--ease), transform .8s var(--ease); transition-delay:calc(var(--i,0) * 80ms); }
+    .js-fx .reveal.in { opacity:1; transform:none; }
+
+    /* protection cards */
+    .cards { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:30px; }
+    .card { perspective:900px; }
+    .card-in {
+      position:relative; height:100%; padding:24px; border-radius:16px; overflow:hidden;
+      background:var(--glass); border:1px solid rgba(80,120,160,.25);
+      -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);
+      transform-style:preserve-3d; transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));
+      transition:transform .25s ease, border-color .3s, box-shadow .3s;
+    }
+    .card-in::before { content:""; position:absolute; inset:0; pointer-events:none; opacity:0; transition:opacity .3s;
+      background:radial-gradient(260px circle at var(--mx,50%) var(--my,0%),rgba(57,255,136,.16),transparent 60%); }
+    .card-in:hover { border-color:var(--neon); box-shadow:0 0 0 1px rgba(57,255,136,.45),0 0 34px rgba(57,255,136,.18); }
+    .card-in:hover::before { opacity:1; }
+    .ico { width:50px; height:50px; border-radius:13px; display:grid; place-items:center; margin-bottom:16px; color:var(--neon); background:rgba(57,255,136,.08); border:1px solid rgba(57,255,136,.28); transform:translateZ(30px); }
+    .ico svg { width:26px; height:26px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+    .card h3 { margin:0 0 8px; font-size:17px; transform:translateZ(20px); }
+    .card p { margin:0 0 12px; color:var(--muted); font-size:13.5px; line-height:1.6; }
+    .card .go { background:transparent; color:var(--electric); padding:0; font-size:12px; }
+    .card .go:hover { color:var(--neon); }
+    .ico .dot { fill:currentColor; stroke:none; animation:blink 1.4s infinite; }
+    .ico .dot:nth-of-type(2) { animation-delay:.2s; } .ico .dot:nth-of-type(3) { animation-delay:.4s; }
+    .ico .dash { stroke-dasharray:3 3; animation:dash 1.2s linear infinite; }
+    .ico .alert { fill:var(--red); stroke:none; animation:blink 1.1s infinite; }
+    .ico .core { fill:var(--electric); stroke:none; animation:blink 1.6s infinite; }
+    .ico .mer { transform-box:fill-box; transform-origin:center; animation:meridian 3.2s ease-in-out infinite; }
+    @media (max-width:980px) { .cards { grid-template-columns:repeat(2,1fr); } }
+    @media (max-width:600px) { .cards { grid-template-columns:1fr; } }
+
+    /* how it works (pinned) */
+    .how-sticky { display:flex; flex-direction:column; gap:26px; margin-top:30px; }
+    .js-fx .how.is-pinned { height:320vh; }
+    .js-fx .how.is-pinned .how-sticky { position:sticky; top:96px; margin-top:0; min-height:calc(100vh - 120px); justify-content:center; }
+    .track { position:relative; height:4px; border-radius:4px; background:#17202e; margin:0 16.66%; display:none; }
+    .is-pinned .track { display:block; }
+    .track-fill { position:absolute; inset:0 auto 0 0; width:calc(var(--f,0) * 100%); border-radius:4px; background:linear-gradient(90deg,var(--neon),var(--electric)); box-shadow:0 0 14px rgba(57,255,136,.6); }
+    .track i { position:absolute; top:50%; width:16px; height:16px; margin:-8px 0 0 -8px; border-radius:50%; background:#0a0e16; border:2px solid #2a3850; transition:.4s; }
+    .track i:nth-child(2) { left:0; } .track i:nth-child(3) { left:50%; } .track i:nth-child(4) { left:100%; }
+    .track i.on { border-color:var(--neon); background:var(--neon); box-shadow:0 0 14px var(--neon); }
+    .steps3 { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+    .step { transition:opacity .5s, transform .5s var(--ease); }
+    .is-pinned .step { opacity:.32; transform:scale(.965); }
+    .is-pinned .step.done { opacity:.65; transform:none; }
+    .is-pinned .step.active { opacity:1; transform:none; }
+    .step-in { height:100%; padding:22px; border-radius:16px; background:var(--glass); border:1px solid rgba(80,120,160,.25); transition:border-color .4s, box-shadow .4s; }
+    .step.active .step-in { border-color:rgba(57,255,136,.55); box-shadow:0 0 30px rgba(57,255,136,.14); }
+    .num { font:700 11px var(--mono); letter-spacing:.2em; color:var(--electric); }
+    .step h3 { margin:6px 0 6px; font-size:19px; }
+    .step-in > p { margin:0 0 14px; color:var(--muted); font-size:13px; }
+    .mock { position:relative; overflow:hidden; background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:12px; font:12px/1.65 var(--mono); color:#c3ccda; min-height:112px; overflow-wrap:anywhere; }
+    .caret::after { content:"▍"; color:var(--neon); animation:blink 1s steps(2) infinite; }
+    .mock mark { background:transparent; color:inherit; border-radius:4px; }
+    .step.active mark { animation:mark .6s forwards; animation-delay:calc(var(--k) * .6s + .4s); }
+    @keyframes mark { to { background:rgba(239,68,68,.22); box-shadow:inset 0 -2px 0 var(--red); } }
+    .scan-bar { position:absolute; left:0; right:0; top:0; height:2px; opacity:0; background:linear-gradient(90deg,transparent,var(--electric),transparent); box-shadow:0 0 12px var(--electric); }
+    .step.active .scan-bar { animation:bar 2.6s ease-in-out infinite; }
+    .hits { list-style:none; margin:12px 0 0; padding:0; display:grid; gap:6px; }
+    .hits li { display:flex; justify-content:space-between; gap:8px; font-size:12px; padding:6px 10px; border-radius:8px; background:rgba(239,68,68,.07); border:1px solid rgba(239,68,68,.25); color:#ffb4b4; }
+    .hits b { font-family:var(--mono); color:var(--amber); }
+    .js-fx .hits li { opacity:0; transform:translateX(-10px); }
+    .step.active .hits li { animation:hit .5s var(--ease) forwards; animation-delay:calc(var(--k) * .6s + .5s); }
+    @keyframes hit { to { opacity:1; transform:none; } }
+    .note { font-size:11px; color:var(--faint); margin:10px 0 0; }
+    .verdicts { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+    .verdicts span { text-align:center; font-size:12px; font-weight:700; padding:9px 4px; border-radius:10px; border:1px solid var(--line); color:var(--faint); background:var(--panel-2); transition:.4s; }
+    .verdicts span.on[data-v="low"] { color:var(--green); border-color:#0f5b45; background:#0b2a22; box-shadow:0 0 18px rgba(16,185,129,.3); }
+    .verdicts span.on[data-v="medium"] { color:var(--amber); border-color:#6a4a0a; background:#2a1f08; box-shadow:0 0 18px rgba(245,158,11,.3); }
+    .verdicts span.on[data-v="high"] { color:var(--red); border-color:#7a2323; background:#2d1212; box-shadow:0 0 18px rgba(239,68,68,.35); }
+    .bigscore { margin:16px 0 8px; font-weight:800; font-size:44px; line-height:1; }
+    .bigscore small { font-size:14px; color:var(--muted); font-weight:600; margin-left:4px; }
+    .bar { height:8px; border-radius:8px; background:#1b2433; overflow:hidden; }
+    .bar i { display:block; height:100%; width:0; border-radius:8px; background:var(--faint); transition:width .9s var(--ease), background .4s; }
+    @media (max-width:820px) { .steps3 { grid-template-columns:1fr; } }
+
+    /* intelligence */
+    .ai-wrap { display:grid; grid-template-columns:1fr 1.05fr; gap:30px; align-items:center; }
+    .stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:26px; }
+    .bstat { padding:16px; border-radius:14px; background:var(--glass); border:1px solid rgba(80,120,160,.25); }
+    .bstat b { display:block; font-size:clamp(28px,4vw,40px); line-height:1.1; font-weight:800; background:linear-gradient(90deg,var(--neon),var(--electric)); -webkit-background-clip:text; background-clip:text; color:transparent; font-variant-numeric:tabular-nums; }
+    .bstat span { font-size:12px; color:var(--muted); }
+    .dash { position:relative; isolation:isolate; aspect-ratio:1/1; max-height:540px; width:100%; overflow:hidden; border-radius:20px; border:1px solid #16314a; background:radial-gradient(circle at 50% 50%,rgba(0,200,255,.1),transparent 65%),#080d15; }
+    .secgrid { position:absolute; inset:-20%; z-index:-2; background-image:linear-gradient(rgba(57,255,136,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(57,255,136,.08) 1px,transparent 1px); background-size:34px 34px; animation:gridpan 12s linear infinite; -webkit-mask-image:radial-gradient(circle,#000 30%,transparent 72%); mask-image:radial-gradient(circle,#000 30%,transparent 72%); }
+    .streams { position:absolute; inset:0; z-index:-1; display:flex; justify-content:space-between; padding:0 10px; pointer-events:none; -webkit-mask-image:linear-gradient(transparent,#000 20%,#000 80%,transparent); mask-image:linear-gradient(transparent,#000 20%,#000 80%,transparent); }
+    .stream { width:20px; height:100%; overflow:hidden; font:10px/14px var(--mono); color:rgba(0,200,255,.3); text-align:center; white-space:pre; }
+    .stream:nth-child(n+4):nth-last-child(n+4) { visibility:hidden; }
+    .stream span { display:block; animation:stream var(--dur,12s) linear var(--delay,0s) infinite; }
+    .radar { position:absolute; inset:17%; border-radius:50%; border:1px solid rgba(57,255,136,.4); overflow:hidden;
+      background:
+        linear-gradient(rgba(57,255,136,.18),rgba(57,255,136,.18)) center/1px 100% no-repeat,
+        linear-gradient(rgba(57,255,136,.18),rgba(57,255,136,.18)) center/100% 1px no-repeat,
+        repeating-radial-gradient(circle,transparent 0 26px,rgba(57,255,136,.14) 26px 27px),
+        rgba(4,16,12,.55); }
+    .radar-sweep { position:absolute; inset:0; border-radius:50%; background:conic-gradient(from 0deg,transparent 0 270deg,rgba(57,255,136,.4) 360deg); animation:spin 4.5s linear infinite; }
+    .blip { position:absolute; width:8px; height:8px; border-radius:50%; background:var(--red); box-shadow:0 0 12px var(--red); animation:blip 3s ease-in-out infinite; }
+    .dash .fp { z-index:2; } .dash .float { font-size:10px; }
+    @media (max-width:980px) { .ai-wrap { grid-template-columns:1fr; } .dash { max-height:420px; } }
+
+    /* final cta */
+    .final { position:relative; isolation:isolate; overflow:hidden; text-align:center; margin:clamp(48px,8vw,90px) 0 8px; padding:clamp(80px,14vw,160px) 20px; border-radius:20px; border:1px solid #16314a;
+      background:radial-gradient(600px 360px at 50% 50%,rgba(57,255,136,.1),transparent 70%),linear-gradient(180deg,#0a0e16,#070b13); }
+    .final-shield { position:absolute; inset:0; display:grid; place-items:center; z-index:-1; opacity:.2; scale:var(--z,.85); pointer-events:none; }
+    .final-shield svg { width:min(620px,92%); height:auto; display:block; fill:rgba(57,255,136,.05); stroke:var(--neon); stroke-width:.35; filter:drop-shadow(0 0 24px rgba(57,255,136,.5)); animation:floaty 7s ease-in-out infinite; }
+    .final h2 { font-size:clamp(30px,5.4vw,62px); line-height:1.05; font-weight:850; letter-spacing:-.025em; margin:0 0 14px; }
+    .final p { color:#b4c0d2; font-size:clamp(15px,2vw,19px); margin:0 0 28px; }
+
+    /* ---------- tool: stats / panels ---------- */
+    .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:14px; }
+    .stat { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+    .stat .label { font-size:12px; color:var(--muted); }
+    .stat .value { font-size:24px; font-weight:700; margin-top:4px; line-height:1.2; }
+    .stat .sub { font-size:11px; color:var(--faint); margin-top:4px; }
+    .stat .value.low { color:var(--green); } .stat .value.medium { color:var(--amber); } .stat .value.high { color:var(--red); }
+
+    .grid { display:grid; grid-template-columns:1.15fr 1fr 1fr; gap:14px; margin-bottom:14px; }
+    .grid.two { grid-template-columns:1fr 1fr; }
+    .panel { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; min-width:0; scroll-margin-top:84px; }
+    .panel.wide { margin-bottom:14px; }
+    .panel-head { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:12px; }
+    .panel-head h2 { font-size:14px; font-weight:650; margin:0; }
+    .hint { color:var(--muted); font-size:12px; }
+    label { display:block; font-weight:600; font-size:12px; color:var(--muted); margin:0 0 8px; }
+    textarea, input[type=text], input[type=tel], input[type=url] {
+      width:100%; padding:14px; background:var(--panel-2); color:var(--text);
+      border:1px solid var(--line); border-radius:10px; font:inherit; line-height:1.55;
+    }
+    textarea { min-height:230px; resize:vertical; }
+    textarea::placeholder, input::placeholder { color:var(--faint); }
+    textarea:focus, input:focus { outline:2px solid #39ff8855; border-color:var(--neon); }
+    .count { text-align:right; font-size:11px; color:var(--faint); margin:6px 0 12px; }
+    .actions { display:flex; gap:10px; margin-top:12px; }
+    .error { color:#ff8a8a; font-size:13px; margin:12px 0 0; }
+    .privacy { margin:14px 0 0; font-size:11px; color:var(--faint); }
+
+    .samples { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin:0 0 10px; }
+    .sample { background:var(--panel-2); color:var(--muted); border:1px solid var(--line); padding:4px 10px; font-size:11px; font-weight:600; border-radius:99px; }
+    .sample:hover { color:var(--neon); border-color:#14583a; }
+
+    .gauge-wrap { display:grid; place-items:center; padding:6px 0 0; }
+    .gauge { width:100%; max-width:260px; }
+    .gauge .track { fill:none; stroke:#1b2433; stroke-width:14; stroke-linecap:round; }
+    .gauge .fill { fill:none; stroke:var(--faint); stroke-width:14; stroke-linecap:round; stroke-dasharray:251.33; stroke-dashoffset:251.33; transition:stroke-dashoffset .6s ease, stroke .3s; }
+    .gauge .num { fill:var(--text); font-size:30px; font-weight:700; text-anchor:middle; }
+    .gauge .cap { fill:var(--muted); font-size:9px; text-anchor:middle; }
+    .badge, .threat, .pill { display:inline-block; font-weight:700; border-radius:99px; border:1px solid var(--line); color:var(--muted); white-space:nowrap; }
+    .badge { font-size:11px; padding:3px 10px; }
+    .threat { font-size:13px; padding:4px 12px; margin-bottom:12px; white-space:normal; }
+    .pill { font-size:11px; padding:2px 9px; font-weight:600; }
+    .badge.low,.threat.low,.pill.low { color:var(--green); border-color:#0f5b45; background:#0b2a22; }
+    .badge.medium,.threat.medium,.pill.medium { color:var(--amber); border-color:#6a4a0a; background:#2a1f08; }
+    .badge.high,.threat.high,.pill.high { color:var(--red); border-color:#7a2323; background:#2d1212; }
+    .kv { margin-top:14px; background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:10px 12px; }
+    .kv div { display:flex; justify-content:space-between; gap:12px; padding:4px 0; font-size:12px; }
+    .kv span:first-child { color:var(--faint); font-family:var(--mono); }
+    .kv span:last-child { text-align:right; overflow-wrap:anywhere; }
+
+    .analyst { background:#17153a; border:1px solid #2b2870; border-radius:10px; padding:12px 14px; font-size:13px; color:#cfd0f5; min-height:90px; }
+    .analyst strong { color:#fff; }
+    .empty { text-align:center; padding:34px 10px; color:var(--muted); }
+    .empty-icon { width:48px; height:48px; border-radius:14px; margin:0 auto 12px; display:grid; place-items:center; background:#16213a; color:var(--blue-2); font-size:22px; }
+    .method { margin-top:12px; font-size:11px; color:var(--faint); }
+    .threat-label { font-size:11px; color:var(--faint); margin-bottom:6px; }
+    .actions-grid { display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+    .sub-h { font-size:12px; color:var(--muted); font-weight:600; margin:0 0 10px; }
+    .reply { display:flex; gap:10px; align-items:flex-start; justify-content:space-between; background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:10px; font-size:13px; color:#c3ccda; overflow-wrap:anywhere; }
+    .copy { background:transparent; color:var(--blue-2); border:1px solid var(--line); padding:4px 10px; font-size:11px; flex-shrink:0; }
+    ul.steps { margin:0; padding-left:18px; }
+    ul.steps li { margin-bottom:8px; color:#c3ccda; font-size:13px; }
+    .finding { border-top:1px solid var(--line); padding:12px 0; display:grid; grid-template-columns:1fr auto; gap:4px 12px; }
+    .finding:first-of-type { border-top:0; }
+    .finding .title { font-weight:600; font-size:13px; overflow-wrap:anywhere; }
+    .finding .rec { grid-column:1; color:var(--muted); font-size:12px; overflow-wrap:anywhere; }
+    .finding .pts { grid-row:1; grid-column:2; font-family:var(--mono); font-size:12px; color:var(--amber); }
+    .src { font-size:10px; font-weight:700; padding:1px 7px; border-radius:99px; margin-right:8px; border:1px solid var(--line); color:var(--muted); vertical-align:middle; }
+    .src.ai { color:#b4acff; border-color:#3b3590; }
+    .src.provider { color:#9fdcf0; border-color:#164a57; }
+    .table-scroll { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; min-width:520px; }
+    th { text-align:left; font-size:12px; font-weight:600; color:var(--muted); padding:8px 10px; border-bottom:1px solid var(--line); }
+    td { padding:10px; font-size:12px; border-bottom:1px solid var(--line); vertical-align:top; }
+    td.url { font-family:var(--mono); overflow-wrap:anywhere; max-width:320px; }
+    .report { background:#2a1115; border:1px solid #7a2323; border-radius:12px; padding:16px 18px; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+    .report h3 { margin:0 0 4px; font-size:14px; color:#ffb4b4; }
+    .report p { margin:0; font-size:13px; color:#e3bcbc; max-width:620px; }
+    .report p a { color:#fff; font-weight:700; }
+    .report-btn { background:var(--red); color:#fff; padding:11px 20px; }
+    .report-btn:hover { background:#f05555; }
+
+    .history-list { display:grid; gap:8px; }
+    .history-row { background:var(--panel-2); border:1px solid var(--line); border-radius:10px; padding:12px; }
+    .history-preview { margin:0 0 6px; overflow-wrap:anywhere; white-space:pre-wrap; }
+    .history-meta { display:flex; gap:8px; flex-wrap:wrap; align-items:center; font-size:12px; color:var(--muted); }
+    .history-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+    .history-actions button { padding:6px 12px; font-size:12px; }
+    .danger { color:var(--red); }
+
+    .toast { position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:#16213a; color:var(--text); border:1px solid var(--line); padding:10px 18px; border-radius:99px; font-size:13px; z-index:100; box-shadow:0 8px 30px rgba(0,0,0,.45); }
+    .disclaimer { font-size:11px; color:var(--faint); text-align:center; margin:18px 0 0; }
+
+    /* keyframes */
+    @keyframes draw { to { stroke-dashoffset:0; } }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    @keyframes rise { to { transform:none; } }
+    @keyframes fade { to { opacity:1; } }
+    @keyframes scan { from { top:24%; } to { top:74%; } }
+    @keyframes floaty { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-12px); } }
+    @keyframes pulse { 0% { box-shadow:0 0 0 0 rgba(57,255,136,.55); } 70%,100% { box-shadow:0 0 0 18px rgba(57,255,136,0); } }
+    @keyframes wheel { 0% { opacity:0; transform:translateY(0); } 40% { opacity:1; } 100% { opacity:0; transform:translateY(10px); } }
+    @keyframes marquee { to { transform:translateX(-50%); } }
+    @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:.25; } }
+    @keyframes dash { to { stroke-dashoffset:-12; } }
+    @keyframes meridian { 0%,100% { transform:scaleX(1); } 50% { transform:scaleX(.12); } }
+    @keyframes bar { 0%,100% { top:0; opacity:0; } 10%,90% { opacity:.95; } 50% { top:calc(100% - 2px); } }
+    @keyframes gridpan { to { transform:translate(34px,34px); } }
+    @keyframes stream { to { transform:translateY(-50%); } }
+    @keyframes blip { 0%,100% { opacity:.15; transform:scale(.6); } 50% { opacity:1; transform:scale(1.2); } }
+
+    @media (max-width:1040px) { .ss-links { display:none; } }
+    @media (max-width:980px) {
+      .stats { grid-template-columns:repeat(2,1fr); }
+      .grid, .grid.two, .actions-grid { grid-template-columns:1fr; }
+    }
+    @media (max-width:520px) { .shell { padding:12px 12px 32px; } .chip.hide-sm { display:none; } }
+    @media (prefers-reduced-motion:reduce) {
+      html { scroll-behavior:auto; }
+      .gauge .fill { transition:none; }
+      .line > span { transform:none; animation:none; }
+      .hero-sub, .cta { opacity:1; animation:none; }
+      .shield .outline, .shield .check { stroke-dashoffset:0; animation:none; }
+      .ring, .sweep, .scanline, .float, .marquee-track, .secgrid, .stream span, .radar-sweep, .blip, .glow,
+      .scroll-hint i::after, .final-shield svg, .ico .dot, .ico .dash, .ico .alert, .ico .core, .ico .mer, .caret::after { animation:none; }
+      .marquee-track { flex-wrap:wrap; width:auto; justify-content:center; }
+      .js-fx .reveal { opacity:1; transform:none; transition:none; }
+      .js-fx .hits li { opacity:1; transform:none; animation:none !important; }
+      .step.active mark { animation:none; background:rgba(239,68,68,.22); }
+      .step.active .scan-bar { animation:none; }
+      .card-in { transition:none; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.3 8-8 9-4.7-1-8-4.5-8-9V6l8-3z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg></span>
+      ScamShield
+    </div>
+    <nav class="ss-links" aria-label="Sections">
+      <button data-i18n="nav.protection" class="linkbtn" data-go="protection">Protection</button>
+      <button data-i18n="nav.how" class="linkbtn" data-go="how">How it works</button>
+      <button data-i18n="nav.intelligence" class="linkbtn" data-go="intelligence">Intelligence</button>
+      <button data-i18n="nav.message" class="linkbtn" data-go="scan">Message</button>
+      <button data-i18n="nav.link" class="linkbtn" data-go="link">Link</button>
+      <button data-i18n="nav.phone" class="linkbtn" data-go="phone">Phone</button>
+      <button data-i18n="nav.history" class="linkbtn" data-go="historyPanel">History</button>
+    </nav>
+    <div class="nav-controls">
+      <span class="chip live hide-sm" id="apiChip">Checking…</span>
+      <span class="chip hide-sm" id="aiChip">AI: …</span>
+      <label for="lang" class="hint" style="margin:0" data-i18n="lang.label" data-i18n-title="lang.label">Report language</label>
+      <select id="lang" aria-label="Report language"></select>
+    </div>
+  </header>
+
+  <!-- ================= HERO ================= -->
+  <section class="hero" data-hero id="top" aria-labelledby="heroTitle">
+    <div class="gridbg" data-parallax="0.12" aria-hidden="true"></div>
+    <canvas class="net" data-net="hero" aria-hidden="true"></canvas>
+
+    <span class="fp" data-parallax="-0.10" style="left:7%;top:24%" aria-hidden="true"><span class="float">OTP · never share</span></span>
+    <span class="fp" data-parallax="0.14" style="right:8%;top:20%" aria-hidden="true"><span class="float">bit.ly/••• link flagged</span></span>
+    <span class="fp" data-parallax="-0.16" style="left:12%;bottom:24%" aria-hidden="true"><span class="float">UPI PIN? never to receive</span></span>
+    <span class="fp" data-parallax="0.09" style="right:10%;bottom:28%" aria-hidden="true"><span class="float">“Digital arrest” = scam</span></span>
+    <span class="fp" data-parallax="-0.07" style="left:42%;top:9%" aria-hidden="true"><span class="float">Helpline 1930</span></span>
+
+    <div class="hero-inner" data-hero-content>
+      <div class="shield" aria-hidden="true">
+        <span class="sweep"></span><span class="ring"></span><span class="ring r2"></span>
+        <svg viewBox="0 0 24 24">
+          <path class="outline" pathLength="100" d="M12 3l8 3v6c0 4.5-3.2 8.2-8 9-4.8-.8-8-4.5-8-9V6l8-3z"/>
+          <path class="check" pathLength="100" d="M9 12l2 2 4-4"/>
+        </svg>
+        <span class="scanline"></span>
+      </div>
+      <p class="eyebrow">Fraud check · SMS · WhatsApp · Links · Calls</p>
+      <h1 id="heroTitle">
+        <span class="line"><span>Check before</span></span>
+        <span class="line"><span class="grad">you trust.</span></span>
+      </h1>
+      <p class="hero-sub">Paste a suspicious message, link or phone number. ScamShield flags OTP traps, fake KYC, UPI tricks, digital-arrest calls and lookalike websites in seconds.</p>
+      <div class="cta">
+        <button class="btn primary big glow" data-go="scan" data-focus="msg">Scan a message</button>
+        <button class="btn ghost big" data-go="link" data-focus="urlIn">Check a link</button>
+        <button class="btn ghost big" data-go="phone" data-focus="phoneIn">Check a number</button>
+      </div>
+    </div>
+    <div class="scroll-hint" aria-hidden="true"><i></i>Scroll</div>
+  </section>
+
+  <div class="marquee" aria-label="Scam types ScamShield screens for">
+    <div class="marquee-track" data-marquee>
+      <span class="tag">OTP Theft</span><span class="tag">Fake KYC</span><span class="tag">UPI Collect Tricks</span>
+      <span class="tag">Digital Arrest</span><span class="tag">Fake Job Offers</span><span class="tag">Investment &amp; Crypto Schemes</span>
+      <span class="tag">Parcel &amp; Courier Scams</span><span class="tag">Electricity Bill Threats</span><span class="tag">“Hi Mum” Impersonation</span>
+      <span class="tag">Lottery &amp; Prize Claims</span><span class="tag">Phishing Links</span><span class="tag">Hinglish &amp; Tenglish</span>
+    </div>
+  </div>
+
+  <!-- ================= PROTECTION ================= -->
+  <section class="sec" id="protection" aria-labelledby="protTitle">
+    <div class="sec-head reveal">
+      <p class="eyebrow">Protection layers</p>
+      <h2 class="h2" id="protTitle">One Shield. <span class="grad">Three Ways to Check.</span></h2>
+      <p class="lead">Rules, link inspection and Gemini analysis work together. Links are read as text, never opened. Every scan is saved to your history.</p>
+    </div>
+    <div class="cards" data-stagger>
+      <article class="card reveal" data-tilt><div class="card-in">
+        <div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4V5z"/><circle class="dot" cx="8.5" cy="10.5" r="1"/><circle class="dot" cx="12" cy="10.5" r="1"/><circle class="dot" cx="15.5" cy="10.5" r="1"/></svg></div>
+        <h3>Message Scanner</h3>
+        <p>13 scam rule families: OTP theft, fake KYC, UPI collect tricks, digital arrest, fake jobs, parcel and bill threats, investment schemes and family impersonation.</p>
+        <button class="go" data-go="scan" data-focus="msg">Scan a message →</button>
+      </div></article>
+      <article class="card reveal" data-tilt><div class="card-in">
+        <div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="dash" d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path class="dash" d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg></div>
+        <h3>Link Checker</h3>
+        <p>Spots brand lookalikes (SBI, HDFC, Paytm…), shorteners, raw IPs, Punycode, risky domain endings and direct .apk downloads, without visiting the site.</p>
+        <button class="go" data-go="link" data-focus="urlIn">Check a link →</button>
+      </div></article>
+      <article class="card reveal" data-tilt><div class="card-in">
+        <div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/><circle class="alert" cx="19" cy="6" r="2.4"/></svg></div>
+        <h3>Phone Number Check</h3>
+        <p>Validates the number, shows carrier and region, and flags premium-rate, VoIP, 140-series telemarketing and unexpected international callers.</p>
+        <button class="go" data-go="phone" data-focus="phoneIn">Check a number →</button>
+      </div></article>
+      <article class="card reveal" data-tilt><div class="card-in">
+        <div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/><circle class="core" cx="12" cy="12" r="1.8"/></svg></div>
+        <h3>AI Analyst</h3>
+        <p>Gemini names the tactic, explains the risk and drafts safe replies. Its contribution is capped at 30 points so the rules always anchor the verdict.</p>
+      </div></article>
+      <article class="card reveal" data-tilt><div class="card-in">
+        <div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><ellipse class="mer" cx="12" cy="12" rx="4.5" ry="9"/></svg></div>
+        <h3>9 Languages</h3>
+        <p>Detects Indic scripts plus romanized Hinglish and Tenglish. Choose the report language and the AI explains the threat in it.</p>
+      </div></article>
+      <article class="card reveal" data-tilt><div class="card-in">
+        <div class="ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.3 8-8 9-4.7-1-8-4.5-8-9V6l8-3z"/><path d="M9 12h6M12 9v6"/></svg></div>
+        <h3>Report &amp; Recover</h3>
+        <p>Medium and high results link straight to the national cybercrime portal and the 1930 helpline, with clear steps to verify safely.</p>
+        <button class="go" data-go="historyPanel">View your history →</button>
+      </div></article>
+    </div>
+  </section>
+
+  <!-- ================= HOW IT WORKS ================= -->
+  <section class="sec" id="how" aria-labelledby="howTitle">
+    <div class="sec-head reveal">
+      <p class="eyebrow">How ScamShield works</p>
+      <h2 class="h2" id="howTitle">Paste. Analyze. <span class="grad">Know before you click.</span></h2>
+    </div>
+    <div class="how" data-how>
+      <div class="how-sticky" data-how-sticky>
+        <div class="track" aria-hidden="true"><span class="track-fill"></span><i></i><i></i><i></i></div>
+        <div class="steps3">
+          <div class="step" data-step="0"><div class="step-in">
+            <span class="num">STEP 01</span><h3>Input</h3>
+            <p>Paste a message, link or phone number.</p>
+            <div class="mock"><span id="ssTyped" class="caret"></span></div>
+            <p class="note"><button type="button" id="ssUseSample" class="secondary" style="padding:6px 12px;font-size:12px">Try this sample in the scanner</button></p>
+          </div></div>
+          <div class="step" data-step="1"><div class="step-in">
+            <span class="num">STEP 02</span><h3>Analysis</h3>
+            <p>Rules, link checks and AI scan every signal.</p>
+            <div class="mock"><span class="scan-bar"></span>
+              <mark style="--k:0">URGENT</mark>: Your SBI account will be blocked within 2 hours. <mark style="--k:1">Share your OTP</mark> now: <mark style="--k:2">bit.ly/kyc-verify</mark>
+            </div>
+            <ul class="hits">
+              <li style="--k:0">Urgent or threatening language <b>+12</b></li>
+              <li style="--k:1">OTP, password or code request <b>+35</b></li>
+              <li style="--k:2">URL shortener hides destination <b>+20</b></li>
+            </ul>
+            <p class="note">Illustrative example. Your real scan lists its own findings.</p>
+          </div></div>
+          <div class="step" data-step="2"><div class="step-in">
+            <span class="num">STEP 03</span><h3>Protection</h3>
+            <p>A clear verdict and what to do next.</p>
+            <div class="verdicts" aria-live="polite">
+              <span data-v="low">Low</span><span data-v="medium">Medium</span><span data-v="high">High</span>
+            </div>
+            <div class="bigscore"><span id="ssScore">–</span><small>/ 100</small></div>
+            <div class="bar"><i id="ssBar"></i></div>
+            <p class="note" id="ssCaption">Example scan</p>
+          </div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= INTELLIGENCE ================= -->
+  <section class="sec" id="intelligence" aria-labelledby="aiHead">
+    <div class="ai-wrap">
+      <div>
+        <div class="reveal">
+          <p class="eyebrow">Live intelligence</p>
+          <h2 class="h2" id="aiHead">Intelligence That <span class="grad">Thinks Before You Click.</span></h2>
+          <p class="lead">These numbers come straight from your ScamShield server, updated after every scan.</p>
+        </div>
+        <div class="stat-grid" data-stagger>
+          <div class="bstat reveal"><b data-live="total">0</b><span>Total scans on this server</span></div>
+          <div class="bstat reveal"><b data-live="high">0</b><span>High-risk results flagged</span></div>
+          <div class="bstat reveal"><b data-live="langs">0</b><span>Report languages supported</span></div>
+          <div class="bstat reveal"><b data-live="rules">13</b><span>Scam rule families, plus link and phone checks</span></div>
+        </div>
+      </div>
+      <div class="dash reveal" data-zoom="0.92,1,0.5" aria-hidden="true">
+        <div class="secgrid"></div>
+        <canvas class="net" data-net="ai"></canvas>
+        <div class="streams" data-streams="8"></div>
+        <div class="radar"><span class="radar-sweep"></span>
+          <span class="blip" style="left:62%;top:28%"></span>
+          <span class="blip" style="left:30%;top:64%;animation-delay:-1.2s"></span>
+          <span class="blip" style="left:70%;top:68%;animation-delay:-2.1s"></span>
+        </div>
+        <span class="fp" data-parallax="-0.05" style="left:6%;top:8%"><span class="float">RULES · 13 families</span></span>
+        <span class="fp" data-parallax="0.06" style="right:6%;top:12%"><span class="float">GEMINI · capped +30</span></span>
+        <span class="fp" data-parallax="-0.04" style="left:30%;bottom:6%"><span class="float">LINKS · never opened</span></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= TOOLS ================= -->
+  <div class="sec" id="tools" style="padding-top:clamp(56px,9vw,100px)">
+    <div class="sec-head reveal">
+      <p data-i18n="tools.eyebrow" class="eyebrow">Live scanner</p>
+      <h2 class="h2">Check it <span class="grad">right now.</span></h2>
+    </div>
+
+    <section class="stats reveal" aria-label="Your scan statistics">
+      <div class="stat"><div data-i18n="st.total" class="label">Total scans</div><div class="value" id="stTotal">0</div><div class="sub" id="stSplit">0 messages · 0 links · 0 numbers</div></div>
+      <div class="stat"><div data-i18n="st.high" class="label">High-risk found</div><div class="value high" id="stHigh">0</div><div data-i18n="st.high_sub" class="sub">Score 60 or above</div></div>
+      <div class="stat"><div data-i18n="st.avg" class="label">Average score</div><div class="value" id="stAvg">0</div><div data-i18n="st.avg_sub" class="sub">Out of 100</div></div>
+      <div class="stat"><div data-i18n="st.last" class="label">Last result</div><div class="value" id="stLast">—</div><div class="sub" id="stLastAt">No scans yet</div></div>
+    </section>
+
+    <!-- MESSAGE -->
+    <div class="grid reveal" id="scan">
+      <section class="panel">
+        <div class="panel-head"><h2 data-i18n="msg.title">Message scanner</h2><span data-i18n="msg.hint" class="hint">SMS, WhatsApp, email</span></div>
+        <div class="samples" id="samples">
+          <span data-i18n="msg.try" class="hint">Try an example:</span>
+          <button data-i18n="sample.kyc" class="sample" type="button" data-sample="kyc">Fake KYC</button>
+          <button data-i18n="sample.upi" class="sample" type="button" data-sample="upi">UPI trick</button>
+          <button data-i18n="sample.job" class="sample" type="button" data-sample="job">Job offer</button>
+          <button data-i18n="sample.parcel" class="sample" type="button" data-sample="parcel">Parcel</button>
+          <button data-i18n="sample.arrest" class="sample" type="button" data-sample="arrest">Digital arrest</button>
+          <button data-i18n="sample.family" class="sample" type="button" data-sample="family">New number</button>
+        </div>
+        <label data-i18n="msg.label" for="msg">Paste the suspicious message</label>
+        <textarea id="msg" maxlength="12000" data-i18n-ph="msg.placeholder" placeholder="e.g. Dear customer, your SBI account will be blocked today. Update KYC at http://sbi-kyc-update.xyz and share the OTP…"></textarea>
+        <div class="count"><span id="msgCount">0</span> / <span id="msgMax">12000</span><span data-i18n="msg.ctrl"> · Ctrl+Enter to scan</span></div>
+        <div class="actions">
+          <button data-i18n="btn.scan" class="primary" id="scanBtn" type="button">Scan message</button>
+          <button data-i18n="btn.clear" class="secondary" id="clearBtn" type="button">Clear</button>
+        </div>
+        <p class="error" id="msgError" role="alert" hidden></p>
+        <p data-i18n="msg.privacy" class="privacy">Scans are saved to your history on this server. Never paste passwords or full card numbers.</p>
+      </section>
+
+      <section class="panel" aria-live="polite">
+        <div class="panel-head"><h2 data-i18n="risk.title">Risk score</h2><span class="badge" id="msgBadge" data-i18n="badge.none">No scan</span></div>
+        <div class="gauge-wrap">
+          <svg class="gauge" viewBox="0 0 200 120" role="img" aria-label="Risk gauge">
+            <path class="track" d="M20 100 A80 80 0 0 1 180 100"/>
+            <path class="fill" id="msgFill" d="M20 100 A80 80 0 0 1 180 100"/>
+            <text class="num" id="msgNum" x="100" y="92">—</text>
+            <text class="cap" x="100" y="112" data-i18n="risk.cap">RISK SCORE / 100</text>
+          </svg>
+        </div>
+        <div class="kv" id="msgKv"></div>
+      </section>
+
+      <section class="panel" aria-live="polite">
+        <div class="panel-head"><h2 data-i18n="ai.title">AI analyst</h2></div>
+        <div id="msgAnalyst" class="analyst">
+          <div class="empty" style="padding:14px"><div class="empty-icon">🛡</div><span data-i18n="ai.empty">Results appear here after a scan.</span></div>
+        </div>
+        <p class="method" id="msgMethod"></p>
+      </section>
+    </div>
+
+    <div id="msgResults" hidden>
+      <div class="report" id="msgReport" hidden></div>
+      <section class="panel wide">
+        <div class="actions-grid">
+          <div>
+            <div data-i18n="res.threat" class="threat-label">Threat type</div>
+            <span class="threat" id="msgThreat">—</span>
+            <p data-i18n="res.action" class="sub-h">Recommended action</p>
+            <p id="msgAction" style="margin:0;color:#c3ccda"></p>
+          </div>
+          <div>
+            <p data-i18n="res.verify" class="sub-h">Verify before acting</p>
+            <ul class="steps" id="msgVerify"></ul>
+          </div>
+        </div>
+      </section>
+      <section class="panel wide" id="safeBox" hidden>
+        <p data-i18n="res.safe" class="sub-h">Safe replies you can send</p>
+        <div id="msgSafe"></div>
+      </section>
+      <section class="panel wide">
+        <div class="panel-head"><h2 data-i18n="res.why">Why it was flagged</h2><span class="hint" id="findCount"></span></div>
+        <div id="msgFindings"></div>
+      </section>
+      <section class="panel wide" id="urlBox" hidden>
+        <div class="panel-head"><h2 data-i18n="res.links">Links found</h2></div>
+        <div class="table-scroll"><table>
+          <thead><tr><th data-i18n="th.url">URL</th><th data-i18n="th.risk">Risk</th><th data-i18n="th.reasons">Reasons</th></tr></thead>
+          <tbody id="msgUrls"></tbody>
+        </table></div>
+      </section>
+    </div>
+
+    <!-- LINK -->
+    <div class="grid two reveal" id="link">
+      <section class="panel">
+        <div class="panel-head"><h2 data-i18n="link.title">Link checker</h2><span data-i18n="link.hint" class="hint">Check a URL without opening it</span></div>
+        <label data-i18n="link.label" for="urlIn">Link or domain</label>
+        <input type="url" id="urlIn" maxlength="2048" autocomplete="off" spellcheck="false" placeholder="http://sbi-kyc-update.xyz/login">
+        <div class="actions">
+          <button data-i18n="btn.check_link" class="primary" id="urlBtn" type="button">Check link</button>
+          <button data-i18n="btn.clear" class="secondary" id="urlClear" type="button">Clear</button>
+        </div>
+        <p class="error" id="urlError" role="alert" hidden></p>
+        <p data-i18n="link.privacy" class="privacy">ScamShield inspects the link's text only. It never visits the site.</p>
+      </section>
+      <section class="panel" aria-live="polite">
+        <div class="panel-head"><h2 data-i18n="link.report">Link report</h2><span class="badge" id="urlBadge" data-i18n="badge.nocheck">No check</span></div>
+        <div id="urlBody"><div class="empty"><div class="empty-icon">🔗</div><span data-i18n="link.empty">Enter a link to see lookalike, shortener and risky-domain checks.</span></div></div>
+      </section>
+    </div>
+
+    <!-- PHONE -->
+    <div class="grid two reveal" id="phone">
+      <section class="panel">
+        <div class="panel-head"><h2 data-i18n="phone.title">Phone number check</h2><span data-i18n="phone.hint" class="hint">Calls &amp; SMS senders</span></div>
+        <label data-i18n="phone.label" for="phoneIn">Phone number</label>
+        <input type="tel" id="phoneIn" maxlength="40" inputmode="tel" autocomplete="off" placeholder="+91 98765 43210">
+        <div class="actions">
+          <button data-i18n="btn.check_phone" class="primary" id="phoneBtn" type="button">Check number</button>
+          <button data-i18n="btn.clear" class="secondary" id="phoneClear" type="button">Clear</button>
+        </div>
+        <p class="error" id="phoneError" role="alert" hidden></p>
+        <p data-i18n="phone.privacy" class="privacy">Numbers without a country code are treated as Indian (+91) first.</p>
+      </section>
+      <section class="panel" aria-live="polite">
+        <div class="panel-head"><h2 data-i18n="phone.report">Number report</h2><span class="badge" id="phBadge" data-i18n="badge.nocheck">No check</span></div>
+        <div id="phBody"><div class="empty"><div class="empty-icon">📞</div><span data-i18n="phone.empty">Enter a number to see its carrier, region and risk.</span></div></div>
+      </section>
+    </div>
+
+    <!-- HISTORY -->
+    <section class="panel wide reveal" id="historyPanel">
+      <div class="panel-head">
+        <h2 data-i18n="hist.title">History</h2>
+        <div class="nav-controls">
+          <select id="histType" class="select" aria-label="Filter history">
+            <option value="" data-i18n="hist.all">All</option><option value="message" data-i18n="hist.messages">Messages</option><option value="url" data-i18n="hist.links">Links</option><option value="phone" data-i18n="hist.phones">Phone numbers</option>
+          </select>
+          <button data-i18n="hist.refresh" class="secondary" id="histRefresh" type="button">Refresh</button>
+          <button data-i18n="hist.export" class="secondary" id="histExport" type="button">Export CSV</button>
+          <button data-i18n="hist.clear" class="secondary danger" id="histClear" type="button">Clear all</button>
+        </div>
+      </div>
+      <div class="history-list" id="histList"><div class="empty" data-i18n="hist.loading">Loading…</div></div>
+      <div class="actions" style="justify-content:center"><button data-i18n="hist.more" class="secondary" id="histMore" type="button" hidden>Load more</button></div>
+    </section>
+  </div>
+
+  <!-- ================= FINAL CTA ================= -->
+  <section class="final" aria-labelledby="finalTitle">
+    <div class="final-shield" data-zoom="0.8,1.18" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.2 8.2-8 9-4.8-.8-8-4.5-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>
+    </div>
+    <h2 id="finalTitle" class="reveal">Your Digital Safety <span class="grad">Starts Here.</span></h2>
+    <p class="reveal" style="--i:1">Don't trust every message. Verify before you click.</p>
+    <button type="button" class="btn primary big glow reveal" style="--i:2" data-go="scan" data-focus="msg">Protect Yourself Now</button>
+  </section>
+
+  <p class="disclaimer" id="disc">ScamShield gives guidance, not a guarantee. If you've lost money, call <strong id="helpline">1930</strong> immediately.</p>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<!-- ================= APP LOGIC (talks to app.py) ================= -->
+<script>
+(function () {
+  'use strict';
+  document.documentElement.classList.add('js-fx');
+
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  };
+  var lvl = function (l) { var x = String(l || '').toLowerCase(); return x === 'high' || x === 'medium' ? x : 'low'; };
+  var COLORS = { low: 'var(--green)', medium: 'var(--amber)', high: 'var(--red)' };
+  var cfg = { report_url: 'https://cybercrime.gov.in/Webform/Helpline.aspx', helpline: '1930' };
+  var reduced = matchMedia('(prefers-reduced-motion: reduce)');
+
+  function emit(name, detail) { document.dispatchEvent(new CustomEvent(name, { detail: detail })); }
+
+  function toast(msg) {
+    var t = $('toast'); t.textContent = msg; t.hidden = false;
+    clearTimeout(toast._t); toast._t = setTimeout(function () { t.hidden = true; }, 2200);
+  }
+  function api(path, opts) {
+    return fetch(path, opts).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (d) {
+        if (!r.ok) { var e = new Error(d.error || 'Request failed (' + r.status + ')'); e.data = d; e.status = r.status; throw e; }
+        return d;
+      });
+    });
+  }
+  function post(path, body) {
+    return api(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  }
+  function showErr(id, msg) { var el = $(id); el.textContent = msg || ''; el.hidden = !msg; }
+  function goTo(id, focusId) {
+    var el = $(id); if (!el) return;
+    el.scrollIntoView({ behavior: reduced.matches ? 'auto' : 'smooth', block: 'start' });
+    if (focusId) setTimeout(function () { var f = $(focusId); if (f) f.focus({ preventScroll: true }); }, reduced.matches ? 0 : 750);
+  }
+
+  /* ---------- navigation ---------- */
+  document.querySelectorAll('[data-go]').forEach(function (b) {
+    b.addEventListener('click', function (e) { e.preventDefault(); goTo(b.getAttribute('data-go'), b.getAttribute('data-focus')); });
+  });
+
+  /* ---------- reveal ---------- */
+  document.querySelectorAll('[data-stagger]').forEach(function (g) {
+    Array.prototype.forEach.call(g.children, function (c, i) { c.style.setProperty('--i', i); });
+  });
+  var revealEls = document.querySelectorAll('.reveal');
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { threshold: .08, rootMargin: '0px 0px -5% 0px' });
+    revealEls.forEach(function (el) { io.observe(el); });
+  } else { revealEls.forEach(function (el) { el.classList.add('in'); }); }
+
+  /* ---------- language + i18n (strings come from app.py /api/i18n) ---------- */
+  var langSel = $('lang');
+  var LANGS = { en: 'English', hi: 'Hindi', te: 'Telugu', ta: 'Tamil', bn: 'Bengali', mr: 'Marathi', kn: 'Kannada', ml: 'Malayalam', gu: 'Gujarati' };
+  var LANG_MAP = LANGS, LANG_NATIVE = {};
+  var I18N = {}, uiLang = 'en', H = null;      /* H: /api/health result, false when offline */
+  var shown = { msg: null, url: null, phone: null };   /* inputs whose result is on screen */
+  var lastStats = null;
+
+  /* t(key, englishDefault, vars): server string for the current UI language, else the English default */
+  function t(key, def, vars) {
+    var s = I18N[key] != null ? I18N[key] : def;
+    if (vars) s = String(s).replace(/\{(\w+)\}/g, function (m, k) { return vars[k] != null ? vars[k] : m; });
+    return s;
+  }
+  var lv = function (l) { return t('lvl.' + lvl(l), String(l || '')); };
+
+  function fillLangs(map, native) {
+    if (map) LANG_MAP = map;
+    if (native) LANG_NATIVE = native;
+    var saved = 'en'; try { saved = localStorage.getItem('ss_lang') || 'en'; } catch (e) {}
+    var keep = langSel.value || saved;
+    langSel.innerHTML = '<option value="auto">' + esc(t('lang.auto', 'Auto (match message)')) + '</option>' +
+      Object.keys(LANG_MAP).map(function (k) {
+        var nat = LANG_NATIVE[k], label = nat && nat !== LANG_MAP[k] ? nat + ' (' + LANG_MAP[k] + ')' : LANG_MAP[k];
+        return '<option value="' + esc(k) + '">' + esc(label) + '</option>';
+      }).join('');
+    langSel.value = (keep === 'auto' || LANG_MAP[keep]) ? keep : 'en';
+    emit('ss:langs', Object.keys(LANG_MAP).length);
+  }
+  fillLangs(LANGS);
+
+  function browserLang() {
+    var c = ((navigator.language || 'en') + '').slice(0, 2).toLowerCase();
+    return LANG_MAP[c] ? c : 'en';
+  }
+  function renderChips() {
+    if (H === null) return;
+    if (H === false) {
+      $('apiChip').textContent = t('chip.offline', 'Backend offline'); $('aiChip').textContent = t('chip.ai_unknown', 'AI: unknown');
+      return;
+    }
+    $('apiChip').textContent = t('chip.online', 'Backend online');
+    $('aiChip').textContent = H.gemini ? 'AI: ' + (H.model || 'on') : t('chip.ai_rules', 'AI: rules only');
+  }
+  function renderDisc() {
+    var d = $('disc'); if (!d) return;
+    var txt = esc(t('disc', "ScamShield gives guidance, not a guarantee. If you've lost money, call {hl} immediately.", { hl: '%%HL%%' }));
+    d.innerHTML = txt.replace('%%HL%%', '<strong id="helpline">' + esc(cfg.helpline) + '</strong>');
+  }
+  function applyI18n() {
+    document.documentElement.lang = uiLang;
+    document.querySelectorAll('[data-i18n]').forEach(function (el) {
+      if (el.dataset.en == null) el.dataset.en = el.textContent;
+      el.textContent = t(el.getAttribute('data-i18n'), el.dataset.en);
+    });
+    document.querySelectorAll('[data-i18n-ph]').forEach(function (el) {
+      if (el.dataset.enPh == null) el.dataset.enPh = el.getAttribute('placeholder') || '';
+      el.setAttribute('placeholder', t(el.getAttribute('data-i18n-ph'), el.dataset.enPh));
+    });
+    document.querySelectorAll('[data-i18n-title]').forEach(function (el) {
+      if (el.dataset.enTitle == null) el.dataset.enTitle = el.textContent;
+      el.setAttribute('title', t(el.getAttribute('data-i18n-title'), el.dataset.enTitle));
+    });
+    fillLangs();
+    renderChips(); renderDisc(); renderStats(lastStats);
+  }
+  /* load UI strings for the chosen language ('auto' follows the browser for the page chrome) */
+  function setUiLang(sel) {
+    var want = sel === 'auto' ? browserLang() : sel;
+    return api('/api/i18n?lang=' + encodeURIComponent(want)).then(function (d) {
+      I18N = d.strings || {}; uiLang = d.lang || want;
+      applyI18n();
+      if (want !== 'en' && d.translated === false) toast(t('toast.lang_fallback', 'Translation for this language is not available right now — showing English.'));
+    }).catch(function () {});
+  }
+  /* re-fetch the results on screen in the new language WITHOUT saving them to history again */
+  function rerenderForLang() {
+    var L = langSel.value, jobs = [];
+    if (shown.msg) jobs.push(post('/api/analyze', { message: shown.msg, language: L, save: false }).then(renderMessage));
+    if (shown.url) jobs.push(post('/api/analyze-url', { url: shown.url, language: L, save: false }).then(renderUrl));
+    if (shown.phone) jobs.push(post('/api/analyze-phone', { phone: shown.phone, language: L, save: false }).then(renderPhone));
+    return Promise.all(jobs.map(function (p) { return p.catch(function () {}); }));
+  }
+  langSel.addEventListener('change', function () {
+    try { localStorage.setItem('ss_lang', langSel.value); } catch (e) {}
+    toast(t('toast.translating', 'Preparing translation…'));
+    setUiLang(langSel.value).then(rerenderForLang).then(function () { loadHistory(true); });
+  });
+  setUiLang(langSel.value);
+
+  /* ---------- health + stats ---------- */
+  api('/api/health').then(function (h) {
+    H = h; renderChips();
+    $('aiChip').className = 'chip hide-sm ' + (h.gemini ? 'live' : 'off');
+    if (h.language_names) fillLangs(h.language_names, h.language_native);
+    if (h.max_message_length) { $('msg').maxLength = h.max_message_length; $('msgMax').textContent = h.max_message_length; }
+    if (h.report_url) cfg.report_url = h.report_url;
+    if (h.helpline) { cfg.helpline = h.helpline; renderDisc(); }
+  }).catch(function () {
+    H = false; renderChips(); $('apiChip').className = 'chip off hide-sm';
+  });
+
+  function renderStats(s) {
+    if (!s) return;
+    $('stTotal').textContent = s.total;
+    $('stSplit').textContent = t('st.split', '{m} messages · {u} links · {p} numbers', { m: s.messages, u: s.urls || 0, p: s.phones });
+    $('stHigh').textContent = s.high;
+    $('stAvg').textContent = s.avg_score;
+    var l = $('stLast');
+    if (s.last_level) {
+      l.textContent = lv(s.last_level); l.className = 'value ' + lvl(s.last_level);
+      $('stLastAt').textContent = new Date(s.last_at).toLocaleString();
+    } else { l.textContent = '—'; l.className = 'value'; $('stLastAt').textContent = t('st.none', 'No scans yet'); }
+  }
+  function loadStats() {
+    api('/api/stats').then(function (s) { lastStats = s; renderStats(s); emit('ss:stats', s); }).catch(function () {});
+  }
+
+  /* ---------- gauge ---------- */
+  function setGauge(fillId, numId, score, level) {
+    var f = $(fillId), n = $(numId);
+    if (!f || !n) return;
+    if (score == null) { f.style.strokeDashoffset = 251.33; f.style.stroke = ''; n.textContent = '—'; return; }
+    f.style.strokeDashoffset = String(251.33 * (1 - Math.max(0, Math.min(100, score)) / 100));
+    f.style.stroke = COLORS[lvl(level)];
+    n.textContent = score;
+  }
+  function setBadge(id, level, text) {
+    var b = $(id);
+    if (!level) {   /* empty state: keep it translatable */
+      var key = id === 'msgBadge' ? 'badge.none' : 'badge.nocheck';
+      b.className = 'badge'; b.setAttribute('data-i18n', key); b.textContent = t(key, text); return;
+    }
+    b.removeAttribute('data-i18n'); b.className = 'badge ' + lvl(level); b.textContent = text;
+  }
+  function riskBadge(id, level) { setBadge(id, level, t('badge.risk', '{level} risk', { level: lv(level) })); }
+  function emptyHtml(icon, key, def) { return '<div class="empty"><div class="empty-icon">' + icon + '</div><span data-i18n="' + key + '">' + esc(t(key, def)) + '</span></div>'; }
+  function gaugeSvg(fillId, numId) {
+    return '<div class="gauge-wrap"><svg class="gauge" viewBox="0 0 200 120"><path class="track" d="M20 100 A80 80 0 0 1 180 100"/>' +
+      '<path class="fill" id="' + fillId + '" d="M20 100 A80 80 0 0 1 180 100"/><text class="num" id="' + numId + '" x="100" y="92">—</text>' +
+      '<text class="cap" x="100" y="112">' + esc(t('risk.cap', 'RISK SCORE / 100')) + '</text></svg></div>';
+  }
+
+  /* ---------- message scanner ---------- */
+  var msg = $('msg');
+  function updCount() { $('msgCount').textContent = msg.value.length; }
+  msg.addEventListener('input', updCount);
+
+  var SAMPLES = {
+    kyc: 'Dear customer, your SBI account will be blocked today. Update KYC immediately at http://sbi-kyc-update.xyz and share the OTP you receive.',
+    upi: 'Congratulations! You have won cashback of Rs 5000. Accept the UPI collect request and enter your UPI PIN to claim within 2 hours.',
+    job: 'Part time job! Work from home and earn Rs 3000 per day by liking videos. Guaranteed returns. Join our VIP Telegram group: bit.ly/earn-daily',
+    parcel: 'Your parcel is on hold at customs. Delivery failed due to incorrect address. Pay a small fee now: http://india-post-redelivery.top/pay',
+    arrest: 'This is the cyber police. A case has been registered against you for money laundering. You are under digital arrest. Install AnyDesk and do not disconnect the call.',
+    family: 'Hi Mum, this is my new number. Please save this number. I lost my phone and need you to send money urgently.'
+  };
+  document.querySelectorAll('[data-sample]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      msg.value = SAMPLES[b.getAttribute('data-sample')] || ''; updCount(); msg.focus();
+    });
+  });
+
+  $('clearBtn').addEventListener('click', function () {
+    msg.value = ''; updCount(); showErr('msgError', ''); $('msgResults').hidden = true;
+    setGauge('msgFill', 'msgNum', null); setBadge('msgBadge', null, 'No scan');
+    $('msgKv').innerHTML = ''; $('msgMethod').textContent = ''; shown.msg = null;
+    $('msgAnalyst').innerHTML = '<div class="empty" style="padding:14px"><div class="empty-icon">🛡</div><span data-i18n="ai.empty">' + esc(t('ai.empty', 'Results appear here after a scan.')) + '</span></div>';
+    emit('ss:result', null);
+    msg.focus();
+  });
+
+  function findingsHtml(list) {
+    if (!list || !list.length) return '<p class="hint" style="margin:0">' + esc(t('res.nosignals', 'No risk signals were found.')) + '</p>';
+    return list.map(function (f) {
+      var src = String(f.source || 'rule');
+      return '<div class="finding"><div class="title"><span class="src ' + esc(src) + '">' + esc(src.toUpperCase()) +
+        '</span>' + esc(f.title) + '</div><div class="pts">+' + esc(f.points) + '</div>' +
+        (f.recommendation ? '<div class="rec">' + esc(f.recommendation) + '</div>' : '') + '</div>';
+    }).join('');
+  }
+
+  function renderMessage(r) {
+    var L = lvl(r.level);
+    setGauge('msgFill', 'msgNum', r.score, r.level);
+    riskBadge('msgBadge', r.level);
+    $('msgKv').innerHTML =
+      '<div><span>' + esc(t('kv.level', 'level')) + '</span><span>' + esc(lv(r.level)) + '</span></div>' +
+      '<div><span>' + esc(t('kv.lang', 'detected_language')) + '</span><span>' + esc((r.language && r.language.name) || 'English') + (r.language && r.language.romanized ? ' ' + esc(t('kv.romanized', '(romanized)')) : '') + '</span></div>' +
+      '<div><span>' + esc(t('kv.links', 'links_found')) + '</span><span>' + esc((r.urls || []).length) + '</span></div>' +
+      '<div><span>' + esc(t('kv.signals', 'signals')) + '</span><span>' + esc((r.findings || []).length) + '</span></div>';
+    $('msgAnalyst').innerHTML = '<strong>' + esc(r.threat_type) + '</strong><p style="margin:8px 0 0">' + esc(r.explanation) + '</p>';
+    $('msgMethod').textContent = r.ai_used ? t('method.ai', 'Method: rules + links + AI ({model})', { model: r.model }) : t('method.noai', 'Method: rules + links (AI unavailable)');
+
+    $('msgResults').hidden = false;
+    var t = $('msgThreat'); t.textContent = r.threat_type; t.className = 'threat ' + L;
+    $('msgAction').textContent = r.recommended_action;
+    var v = (r.verify_steps && r.verify_steps.length) ? r.verify_steps : [
+      'Contact the organisation using the number on its official website or your card.',
+      'Do not click links or call numbers given in the message.',
+      'Never share OTPs, PINs or passwords.'];   /* backend normally sends these, already translated */
+    $('msgVerify').innerHTML = v.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('');
+
+    var safe = r.safe_responses || [];
+    $('safeBox').hidden = !safe.length;
+    $('msgSafe').innerHTML = safe.map(function (s) {
+      return '<div class="reply"><span>' + esc(s) + '</span><button class="copy" type="button" data-copy="' + esc(s) + '">' + esc(t('btn.copy', 'Copy')) + '</button></div>';
+    }).join('');
+
+    $('findCount').textContent = t('res.signals', '{n} signal(s)', { n: (r.findings || []).length });
+    $('msgFindings').innerHTML = findingsHtml(r.findings);
+
+    var urls = r.urls || [];
+    $('urlBox').hidden = !urls.length;
+    $('msgUrls').innerHTML = urls.map(function (u) {
+      return '<tr><td class="url">' + esc(u.url) + '</td><td><span class="pill ' + lvl(u.level) + '">' + esc(lv(u.level || 'Low')) + ' · ' + esc(u.points) +
+        '</span></td><td>' + ((u.reasons || []).map(esc).join('<br>') || '—') + '</td></tr>';
+    }).join('');
+
+    renderReport('msgReport', r);
+    emit('ss:result', { score: r.score, level: r.level });
+  }
+
+  function reportHtml(r) {
+    var url = r.report_url || cfg.report_url, hl = r.helpline || cfg.helpline;
+    var link = '<a href="tel:' + esc(hl) + '">' + esc(hl) + '</a>';
+    var body = esc(t('rep.body', 'If you lost money or shared details, call {hl} right away and file a complaint on the national cybercrime portal.', { hl: '%%HL%%' })).replace('%%HL%%', link);
+    return '<div><h3>' + esc(t('rep.title', 'Report this to the authorities')) + '</h3><p>' + body + '</p></div>' +
+      '<a class="btn report-btn" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + esc(t('rep.btn', 'Report cybercrime')) + '</a>';
+  }
+  function renderReport(id, r) {
+    var box = $(id);
+    if (!box) return;
+    if (lvl(r.level) === 'low') { box.hidden = true; return; }
+    box.hidden = false; box.innerHTML = reportHtml(r);
+  }
+
+  $('scanBtn').addEventListener('click', function () {
+    var text = msg.value.trim(), btn = $('scanBtn');
+    if (!text) { showErr('msgError', t('err.paste', 'Paste a message first.')); return; }
+    showErr('msgError', ''); btn.disabled = true; btn.textContent = t('btn.scanning', 'Scanning…');
+    post('/api/analyze', { message: text, language: langSel.value }).then(function (r) {
+      shown.msg = text; renderMessage(r); loadStats(); loadHistory(true);
+      $('msgResults').scrollIntoView({ behavior: reduced.matches ? 'auto' : 'smooth', block: 'nearest' });
+    }).catch(function (e) { showErr('msgError', e.message); })
+      .then(function () { btn.disabled = false; btn.textContent = t('btn.scan', 'Scan message'); });
+  });
+  msg.addEventListener('keydown', function (e) { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') $('scanBtn').click(); });
+
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-copy]');
+    if (!b) return;
+    var txt = b.getAttribute('data-copy');
+    (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function () { toast(t('toast.copied', 'Copied')); },
+      function () { toast(t('toast.nocopy', 'Copy not supported here')); });
+  });
+
+  /* fill the scanner from the "How it works" demo */
+  document.addEventListener('ss:sample', function (e) { msg.value = e.detail; updCount(); goTo('scan', 'scanBtn'); });
+
+  /* ---------- link checker ---------- */
+  function renderUrl(r) {
+    riskBadge('urlBadge', r.level);
+    var reasons = (r.reasons || []);
+    $('urlBody').innerHTML = gaugeSvg('urlFill', 'urlNum') +
+      '<div class="kv"><div><span>' + esc(t('kv.host', 'host')) + '</span><span>' + esc(r.host || '—') + '</span></div>' +
+      '<div><span>' + esc(t('kv.level', 'level')) + '</span><span>' + esc(lv(r.level)) + '</span></div></div>' +
+      '<p class="sub-h" style="margin-top:14px">' + esc(t('link.why', 'Why')) + '</p>' +
+      (reasons.length ? '<ul class="steps">' + reasons.map(function (s) { return '<li>' + esc(s) + '</li>'; }).join('') + '</ul>'
+        : '<p class="hint" style="margin:0">' + esc(t('link.nosig', 'No risk signals were found in this link.')) + '</p>') +
+      '<p class="hint" style="margin-top:10px">' + esc(t('link.lowwarn', 'Low risk does not mean safe. Only the text of the link was checked.')) + '</p>' +
+      '<div class="report" id="urlReport" hidden style="margin:12px 0 0"></div>';
+    requestAnimationFrame(function () { setGauge('urlFill', 'urlNum', r.score, r.level); });
+    renderReport('urlReport', r);
+  }
+
+  $('urlBtn').addEventListener('click', function () {
+    var v = $('urlIn').value.trim(), btn = $('urlBtn');
+    if (!v) { showErr('urlError', t('err.enter_link', 'Enter a link first.')); return; }
+    showErr('urlError', ''); btn.disabled = true; btn.textContent = t('btn.checking', 'Checking…');
+    post('/api/analyze-url', { url: v, language: langSel.value }).then(function (r) {
+      shown.url = v; renderUrl(r); loadStats(); loadHistory(true);
+    }).catch(function (e) { showErr('urlError', e.message); })
+      .then(function () { btn.disabled = false; btn.textContent = t('btn.check_link', 'Check link'); });
+  });
+  $('urlIn').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('urlBtn').click(); });
+  $('urlClear').addEventListener('click', function () {
+    $('urlIn').value = ''; showErr('urlError', ''); setBadge('urlBadge', null, 'No check'); shown.url = null;
+    $('urlBody').innerHTML = emptyHtml('🔗', 'link.empty', 'Enter a link to see lookalike, shortener and risky-domain checks.');
+  });
+
+  /* ---------- phone scanner ---------- */
+  function kvRow(k, v) { return v ? '<div><span>' + esc(k) + '</span><span>' + esc(v) + '</span></div>' : ''; }
+  function renderPhone(r) {
+    riskBadge('phBadge', r.level);
+    var n = r.normalized || {};
+    $('phBody').innerHTML = gaugeSvg('phFill', 'phNum') +
+      '<div class="kv">' + kvRow(t('kv.valid', 'valid'), r.valid ? t('yes', 'Yes') : t('no', 'No')) + kvRow(t('kv.international', 'international'), n.international) + kvRow(t('kv.national', 'national'), n.national) +
+      kvRow(t('kv.region', 'region'), r.region_name) + kvRow(t('kv.carrier', 'carrier'), r.carrier) + kvRow(t('kv.location', 'location'), r.location) + kvRow(t('kv.type', 'type'), r.number_type) + '</div>' +
+      '<div style="margin-top:12px">' + findingsHtml(r.findings) + '</div><div class="report" id="phReport" hidden style="margin:12px 0 0"></div>';
+    requestAnimationFrame(function () { setGauge('phFill', 'phNum', r.score, r.level); });
+    renderReport('phReport', r);
+  }
+  $('phoneBtn').addEventListener('click', function () {
+    var v = $('phoneIn').value.trim(), btn = $('phoneBtn');
+    if (!v) { showErr('phoneError', t('err.enter_phone', 'Enter a phone number first.')); return; }
+    showErr('phoneError', ''); btn.disabled = true; btn.textContent = t('btn.checking', 'Checking…');
+    post('/api/analyze-phone', { phone: v, language: langSel.value }).then(function (r) {
+      shown.phone = v; renderPhone(r); loadStats(); loadHistory(true);
+    }).catch(function (e) { showErr('phoneError', e.message); })
+      .then(function () { btn.disabled = false; btn.textContent = t('btn.check_phone', 'Check number'); });
+  });
+  $('phoneIn').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('phoneBtn').click(); });
+  $('phoneClear').addEventListener('click', function () {
+    $('phoneIn').value = ''; showErr('phoneError', ''); setBadge('phBadge', null, 'No check'); shown.phone = null;
+    $('phBody').innerHTML = emptyHtml('📞', 'phone.empty', 'Enter a number to see its carrier, region and risk.');
+  });
+
+  /* ---------- history ---------- */
+  var PAGE = 20, offset = 0;
+  function histRow(it) {
+    var L = lvl(it.level);
+    return '<div class="history-row" data-id="' + esc(it.id) + '"><p class="history-preview">' + esc(it.preview || t('hist.empty_item', '(empty)')) + '</p>' +
+      '<div class="history-meta"><span class="pill ' + L + '">' + esc(lv(it.level)) + ' · ' + esc(it.score) + '</span><span>' +
+      esc(t('type.' + it.analysis_type, 'Scan')) + '</span><span>' + esc(new Date(it.created_at).toLocaleString()) + '</span></div>' +
+      '<div class="history-actions"><button class="secondary" data-act="view" type="button">' + esc(t('hist.view', 'View')) + '</button>' +
+      '<button class="secondary danger" data-act="del" type="button">' + esc(t('hist.delete', 'Delete')) + '</button></div></div>';
+  }
+  function loadHistory(reset) {
+    if (reset) offset = 0;
+    var type = $('histType').value;
+    api('/api/history?limit=' + PAGE + '&offset=' + offset + (type ? '&type=' + type : '')).then(function (d) {
+      var list = $('histList');
+      var html = d.items.map(histRow).join('');
+      if (reset) list.innerHTML = html || '<div class="empty">' + esc(t('hist.none', 'No history yet.')) + '</div>';
+      else list.insertAdjacentHTML('beforeend', html);
+      offset += d.items.length;
+      $('histMore').hidden = offset >= d.total;
+    }).catch(function (e) { $('histList').innerHTML = '<div class="empty">' + esc(e.message) + '</div>'; });
+  }
+  $('histRefresh').addEventListener('click', function () { loadHistory(true); });
+  $('histType').addEventListener('change', function () { loadHistory(true); });
+  $('histMore').addEventListener('click', function () { loadHistory(false); });
+
+  // Retry an admin-protected request once with a token prompt on 403.
+  function withAdmin(run) {
+    return run('').catch(function (e) {
+      if (e.status === 403) {
+        var tok = prompt(t('prompt.admin', 'Admin token:')) || '';
+        if (!tok) throw e;
+        return run(tok);
+      }
+      throw e;
+    });
+  }
+  $('histClear').addEventListener('click', function () {
+    if (!confirm(t('confirm.clear', 'Delete ALL history? This cannot be undone.'))) return;
+    withAdmin(function (tok) {
+      return api('/api/history', { method: 'DELETE', headers: tok ? { 'X-Admin-Token': tok } : {} });
+    }).then(function () { toast(t('toast.cleared', 'History cleared')); loadHistory(true); loadStats(); })
+      .catch(function (e) { toast(e.message); });
+  });
+  $('histExport').addEventListener('click', function () {
+    withAdmin(function (tok) {
+      return fetch('/api/history/export', { headers: tok ? { 'X-Admin-Token': tok } : {} }).then(function (r) {
+        if (!r.ok) { return r.json().catch(function () { return {}; }).then(function (d) { var e = new Error(d.error || 'Export failed'); e.status = r.status; throw e; }); }
+        return r.blob();
+      });
+    }).then(function (blob) {
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = 'scamshield-history.csv';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+      toast(t('toast.exported', 'Exported'));
+    }).catch(function (e) { toast(e.message); });
+  });
+  $('histList').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-act]'); if (!b) return;
+    var row = b.closest('.history-row'), id = row.getAttribute('data-id');
+    if (b.dataset.act === 'del') {
+      api('/api/history/' + id, { method: 'DELETE' }).then(function () { row.remove(); loadStats(); toast(t('toast.deleted', 'Deleted')); })
+        .catch(function (er) { toast(er.message); });
+    } else {
+      api('/api/history/' + id).then(function (d) {
+        if (!d.result) { toast(t('toast.unavailable', 'Details unavailable')); return; }
+        if (d.analysis_type === 'phone') {
+          $('phoneIn').value = d.result.phone_number || ''; shown.phone = d.result.phone_number || null; renderPhone(d.result); goTo('phone');
+        } else if (d.analysis_type === 'url') {
+          $('urlIn').value = d.result.url || ''; shown.url = d.result.url || null; renderUrl(d.result); goTo('link');
+        } else {
+          msg.value = d.result.message || ''; shown.msg = d.result.message || null; updCount(); renderMessage(d.result); goTo('scan');
+        }
+      }).catch(function (er) { toast(er.message); });
+    }
+  });
+
+  updCount(); loadStats(); loadHistory(true);
+})();
+</script>
+
+<!-- ================= SCROLL / MOTION ENGINE ================= -->
+<script>
+(function () {
+  'use strict';
+  var root = document.documentElement;
+  var $ = function (s, c) { return (c || document).querySelector(s); };
+  var $$ = function (s, c) { return Array.prototype.slice.call((c || document).querySelectorAll(s)); };
+  var clamp = function (v, a, b) { return Math.min(b === undefined ? 1 : b, Math.max(a === undefined ? 0 : a, v)); };
+  var reduceMQ = matchMedia('(prefers-reduced-motion: reduce)');
+  var mobileMQ = matchMedia('(max-width: 820px)');
+  var reduced = function () { return reduceMQ.matches; };
+  var SAMPLE = 'URGENT: Your SBI account will be blocked within 2 hours. Share your OTP now: bit.ly/kyc-verify';
+
+  /* marquee: duplicate for a seamless loop */
+  var track = $('[data-marquee]');
+  if (track && !reduced()) {
+    $$('.tag', track).forEach(function (c) { var k = c.cloneNode(true); k.setAttribute('aria-hidden', 'true'); track.appendChild(k); });
+  }
+
+  /* sample button in step 1 */
+  var useBtn = $('#ssUseSample');
+  if (useBtn) useBtn.addEventListener('click', function () {
+    document.dispatchEvent(new CustomEvent('ss:sample', { detail: SAMPLE }));
+  });
+
+  /* network canvases */
+  function network(canvas, opts) {
+    var ctx = canvas.getContext('2d');
+    var w = 0, h = 0, pts = [], raf = 0, visible = false;
+    function resize() {
+      var r = canvas.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      var dpr = Math.min(devicePixelRatio || 1, 2);
+      w = r.width; h = r.height;
+      canvas.width = w * dpr; canvas.height = h * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      var n = Math.round(opts.count * clamp(w / 900, 0.5, 1.2));
+      pts = [];
+      for (var i = 0; i < n; i++) pts.push({
+        x: Math.random() * w, y: Math.random() * h,
+        vx: (Math.random() - 0.5) * opts.speed, vy: (Math.random() - 0.5) * opts.speed,
+        r: Math.random() * 1.4 + 0.7, c: Math.random() < 0.6 ? '57,255,136' : '0,200,255'
+      });
+      draw(false);
+    }
+    function draw(move) {
+      ctx.clearRect(0, 0, w, h);
+      var i, j, p;
+      if (move) for (i = 0; i < pts.length; i++) {
+        p = pts[i]; p.x += p.vx; p.y += p.vy;
+        if (p.x < 0 || p.x > w) p.vx *= -1;
+        if (p.y < 0 || p.y > h) p.vy *= -1;
+      }
+      for (i = 0; i < pts.length; i++) for (j = i + 1; j < pts.length; j++) {
+        var dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y, d = Math.sqrt(dx * dx + dy * dy);
+        if (d < opts.link) {
+          ctx.strokeStyle = 'rgba(57,255,136,' + ((1 - d / opts.link) * 0.3) + ')';
+          ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(pts[i].x, pts[i].y); ctx.lineTo(pts[j].x, pts[j].y); ctx.stroke();
+        }
+      }
+      for (i = 0; i < pts.length; i++) {
+        p = pts[i];
+        ctx.fillStyle = 'rgba(' + p.c + ',.12)'; ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 4, 0, 6.283); ctx.fill();
+        ctx.fillStyle = 'rgba(' + p.c + ',.9)'; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.283); ctx.fill();
+      }
+    }
+    function loop() { if (!visible || reduced()) { raf = 0; return; } draw(true); raf = requestAnimationFrame(loop); }
+    if ('ResizeObserver' in window) new ResizeObserver(resize).observe(canvas); else addEventListener('resize', resize);
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(function (es) { visible = es[0].isIntersecting; if (visible && !raf) loop(); }).observe(canvas);
+    } else { visible = true; loop(); }
+    resize();
+  }
+  $$('canvas[data-net]').forEach(function (c) {
+    network(c, c.dataset.net === 'hero' ? { count: 60, link: 120, speed: 0.35 } : { count: 26, link: 100, speed: 0.3 });
+  });
+
+  /* hex data streams */
+  $$('[data-streams]').forEach(function (box) {
+    for (var i = 0; i < (+box.dataset.streams || 8); i++) {
+      var col = document.createElement('div'); col.className = 'stream';
+      var rows = [];
+      for (var k = 0; k < 28; k++) rows.push(('0' + Math.floor(Math.random() * 256).toString(16)).slice(-2));
+      var span = document.createElement('span'); span.textContent = rows.join('\n') + '\n' + rows.join('\n');
+      col.style.setProperty('--dur', (9 + Math.random() * 10).toFixed(1) + 's');
+      col.style.setProperty('--delay', (-Math.random() * 10).toFixed(1) + 's');
+      col.appendChild(span); box.appendChild(col);
+    }
+  });
+
+  /* 3D tilt */
+  if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    $$('[data-tilt]').forEach(function (card) {
+      var inner = $('.card-in', card);
+      card.addEventListener('pointermove', function (e) {
+        if (reduced()) return;
+        var r = card.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+        inner.style.setProperty('--ry', ((x - 0.5) * 10).toFixed(2) + 'deg');
+        inner.style.setProperty('--rx', ((0.5 - y) * 10).toFixed(2) + 'deg');
+        inner.style.setProperty('--mx', (x * 100).toFixed(1) + '%');
+        inner.style.setProperty('--my', (y * 100).toFixed(1) + '%');
+      });
+      card.addEventListener('pointerleave', function () { inner.style.setProperty('--rx', '0deg'); inner.style.setProperty('--ry', '0deg'); });
+    });
+  }
+
+  /* live counters, fed by the backend's /api/stats */
+  var fmt = function (n) { return Number(n).toLocaleString('en-IN'); };
+  var live = { total: 0, high: 0, langs: 0, rules: 13 };
+  var statsVisible = false;
+  function countTo(el, to) {
+    var from = Number(el.dataset.val || 0);
+    el.dataset.val = to;
+    if (reduced() || from === to) { el.textContent = fmt(to); return; }
+    var t0 = performance.now(), dur = 1200;
+    (function tick(now) {
+      var k = clamp((now - t0) / dur);
+      el.textContent = fmt(Math.round(from + (to - from) * (1 - Math.pow(1 - k, 3))));
+      if (k < 1) requestAnimationFrame(tick);
+    })(t0);
+  }
+  function pushCounters() { $$('[data-live]').forEach(function (el) { countTo(el, live[el.dataset.live] || 0); }); }
+  document.addEventListener('ss:stats', function (e) { live.total = e.detail.total; live.high = e.detail.high; if (statsVisible) pushCounters(); });
+  document.addEventListener('ss:langs', function (e) { live.langs = e.detail; if (statsVisible) pushCounters(); });
+  var statBox = $('.stat-grid');
+  if (statBox && 'IntersectionObserver' in window) {
+    var so = new IntersectionObserver(function (es) { if (es[0].isIntersecting) { statsVisible = true; pushCounters(); so.disconnect(); } }, { threshold: 0.3 });
+    so.observe(statBox);
+  } else { statsVisible = true; pushCounters(); }
+
+  /* step 3 mirrors the real latest result */
+  var lastResult = null;
+  var LEVEL_COLOR = { low: 'var(--green)', medium: 'var(--amber)', high: 'var(--red)' };
+  function showResult() {
+    var level = lastResult ? String(lastResult.level || 'Low').toLowerCase() : 'high';
+    var score = lastResult ? Number(lastResult.score) || 0 : 82;
+    $$('.verdicts span').forEach(function (s) { s.classList.toggle('on', s.dataset.v === level); });
+    $('#ssScore').textContent = fmt(score);
+    var bar = $('#ssBar'); bar.style.width = score + '%'; bar.style.background = LEVEL_COLOR[level] || '';
+    $('#ssCaption').textContent = lastResult ? 'Your latest message scan, from the scanner below.' : 'Example scan. Run your own below.';
+  }
+  document.addEventListener('ss:result', function (e) { lastResult = e.detail; showResult(); });
+
+  /* step 1 typing demo */
+  var typed = false;
+  function typeSample() {
+    if (typed) return; typed = true;
+    var out = $('#ssTyped');
+    if (reduced()) { out.textContent = SAMPLE; return; }
+    var i = 0;
+    var id = setInterval(function () { out.textContent = SAMPLE.slice(0, ++i); if (i >= SAMPLE.length) clearInterval(id); }, 26);
+  }
+
+  /* scroll engine */
+  var hero = $('[data-hero]'), heroContent = $('[data-hero-content]'), hint = $('.scroll-hint');
+  var how = $('[data-how]'), sticky = $('[data-how-sticky]');
+  var steps = $$('.step'), nodes = $$('.track i'), fill = $('.track-fill');
+  var lastStep = -1, ticking = false;
+
+  function syncHowMode() {
+    var pinned = !mobileMQ.matches && !reduced();
+    how.classList.toggle('is-pinned', pinned);
+    if (!pinned) { steps.forEach(function (s) { s.classList.add('active'); s.classList.remove('done'); }); typeSample(); showResult(); }
+    else { steps.forEach(function (s) { s.classList.remove('active', 'done'); }); }
+    lastStep = -1; request();
+  }
+  function setStep(idx, f) {
+    fill.style.setProperty('--f', f.toFixed(3));
+    nodes.forEach(function (n, i) { n.classList.toggle('on', i <= idx); });
+    if (idx === lastStep) return;
+    lastStep = idx;
+    steps.forEach(function (s, i) { s.classList.toggle('active', i === idx); s.classList.toggle('done', i < idx); });
+    if (idx === 0) typeSample();
+    if (idx === 2) showResult();
+  }
+  function frame() {
+    ticking = false;
+    var vh = innerHeight, r, p;
+    if (!reduced()) {
+      if (hero) {
+        r = hero.getBoundingClientRect(); p = clamp(-r.top / (r.height * 0.75));
+        heroContent.style.opacity = String(Math.max(0, 1 - p * 1.2));
+        heroContent.style.transform = 'translate3d(0,' + (-p * 90).toFixed(1) + 'px,0) scale(' + (1 - p * 0.06).toFixed(3) + ')';
+        if (hint) hint.style.opacity = String(Math.max(0, 1 - p * 4));
+      }
+      $$('[data-parallax]').forEach(function (el) {
+        var rr = el.parentElement.getBoundingClientRect();
+        if (rr.bottom < -200 || rr.top > vh + 200) return;
+        el.style.translate = '0 ' + (-(rr.top + rr.height / 2 - vh / 2) * parseFloat(el.dataset.parallax)).toFixed(1) + 'px';
+      });
+      $$('[data-zoom]').forEach(function (el) {
+        var rr = el.parentElement.getBoundingClientRect();
+        if (rr.bottom < -100 || rr.top > vh + 100) return;
+        var z = el.dataset.zoom.split(',').map(Number), from = z[0], to = z[1], hold = z[2];
+        var pp = clamp((vh - rr.top) / (vh + rr.height)), q = clamp(pp / (hold || 1));
+        el.style.scale = (from + (to - from) * q).toFixed(3);
+      });
+    }
+    if (how.classList.contains('is-pinned')) {
+      r = how.getBoundingClientRect();
+      var span = how.offsetHeight - sticky.offsetHeight;
+      p = clamp((96 - r.top) / Math.max(span, 1));
+      setStep(p < 0.35 ? 0 : p < 0.7 ? 1 : 2, clamp(p / 0.7));
+    }
+  }
+  function request() { if (!ticking) { ticking = true; requestAnimationFrame(frame); } }
+  addEventListener('scroll', request, { passive: true });
+  addEventListener('resize', request);
+  if (mobileMQ.addEventListener) mobileMQ.addEventListener('change', syncHowMode);
+  if (reduceMQ.addEventListener) reduceMQ.addEventListener('change', syncHowMode);
+  showResult(); syncHowMode(); frame();
+})();
+</script>
+</body>
+</html>
