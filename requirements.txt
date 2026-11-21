@@ -1,0 +1,6 @@
+Flask 
+gunicorn
+phonenumbers
+google-genai
+pydantic
+pycountry
